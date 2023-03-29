@@ -9,7 +9,7 @@ repository = "https://github.com/reubeno/ado-downloader"
 packages = [{include = "ado_downloader"}]
 
 [tool.poetry.scripts]
-ado-downloader = "ado_downloader.__main__:main"
+ado-download = "ado_downloader.__main__:main"
 
 [tool.poetry.dependencies]
 python = "^3.7"
