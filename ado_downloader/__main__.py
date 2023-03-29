@@ -5,7 +5,6 @@ import datetime
 import json
 import logging
 import os
-import pathlib
 import re
 import requests
 import shutil
@@ -238,7 +237,17 @@ def main() -> None:
                 logger.error(f"failed to find artifact {artifact_name} in pipeline")
                 sys.exit(1)
 
-            artifact_download_uri = found_artifact["resource"]["downloadUrl"]
+            artifact_type = found_artifact["resource"]["type"]
+            artifact_is_container = artifact_type == "Container"
+
+            if artifact_is_container:
+                data_prop = found_artifact["resource"]["data"].removeprefix("#/")
+                artifact_download_uri = (
+                    f"{ado_org}/_apis/resources/Containers/{data_prop}"
+                )
+            else:
+                artifact_download_uri = found_artifact["resource"]["downloadUrl"]
+
             access_token = bearer_token["accessToken"]
             download_headers = {"Authorization": f"Bearer {access_token}"}
 
@@ -254,14 +263,21 @@ def main() -> None:
             for resource_name, is_file in things_to_dl:
                 resource_download_uri = artifact_download_uri
 
-                if is_file:
-                    resource_download_uri = resource_download_uri.replace(
-                        "format=zip", "format=file"
+                if artifact_is_container:
+                    resource_download_uri += "?itemPath=" + urllib.parse.quote_plus(
+                        artifact_name + "/" + resource_name
                     )
+                    if not is_file:
+                        resource_download_uri += "&%24format=zip&saveAbsolutePath=false"
+                else:
+                    if is_file:
+                        resource_download_uri = resource_download_uri.replace(
+                            "format=zip", "format=file"
+                        )
 
-                resource_download_uri += "&subPath=" + urllib.parse.quote_plus(
-                    resource_name
-                )
+                    resource_download_uri += "&subPath=" + urllib.parse.quote_plus(
+                        resource_name
+                    )
 
                 if is_file:
                     resource_name_without_leading_separator = (
@@ -309,11 +325,12 @@ def main() -> None:
 
                 block_size = 64 * 1024
                 total_size_in_bytes = int(r.headers.get("content-length", 0))
+                resource_base_name = os.path.basename(resource_name)
                 progress_bar = tqdm.tqdm(
                     total=total_size_in_bytes,
                     unit="iB",
                     unit_scale=True,
-                    desc=f"{'File' if is_file else 'Dir'} [{artifact_name}]{os.path.basename(resource_name)}",
+                    desc=f"{'File' if is_file else 'Dir'} [{artifact_name}]{resource_base_name}",
                 )
 
                 if is_file:
@@ -349,6 +366,9 @@ def main() -> None:
 
                         with zipfile.ZipFile(temp_file.name) as zipped_file:
                             for member_info in zipped_file.infolist():
+                                if member_info.is_dir():
+                                    continue
+
                                 filename = member_info.filename
 
                                 # Strip the leading slash
