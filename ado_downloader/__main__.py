@@ -19,7 +19,7 @@ import yaml
 import zipfile
 
 from colorama import Fore, Style
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence, Union
 
 coloredlogs.DEFAULT_LEVEL_STYLES["debug"]["color"] = "black"
 
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 class FileOrDir:
     name: str
     is_file: bool
-    output_name: str = None
+    output_name: Union[str, None] = None
 
 
 def main() -> None:
@@ -636,7 +636,7 @@ def select_pipeline_run(
     return int(run_id)
 
 
-def parse_file_or_dir(item, is_file: bool) -> FileOrDir:
+def parse_file_or_dir(item: Any, is_file: bool) -> FileOrDir:
     if isinstance(item, str):
         return FileOrDir(name=str(item), is_file=is_file)
 
