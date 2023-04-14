@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import coloredlogs
+import dataclasses
 import datetime
 import json
 import logging
@@ -18,7 +19,7 @@ import yaml
 import zipfile
 
 from colorama import Fore, Style
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence, Union
 
 coloredlogs.DEFAULT_LEVEL_STYLES["debug"]["color"] = "black"
 
@@ -28,6 +29,13 @@ coloredlogs.install(
 )
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass
+class FileOrDir:
+    name: str
+    is_file: bool
+    output_name: Union[str, None] = None
 
 
 def main() -> None:
@@ -46,7 +54,7 @@ def main() -> None:
         help="Download all artifacts",
     )
     parser.add_argument(
-        "-n", "--artifact-name", dest="artifact_name", help="Artifact name"
+        "-n", "--artifact-name", dest="artifact_names", help="Artifact name", action="append"
     )
     parser.add_argument(
         "-f",
@@ -109,23 +117,27 @@ def main() -> None:
         with open(artifact_sources_file_path) as f:
             artifact_sources = yaml.safe_load(f)
 
-    if args.artifact_name:
+    if args.artifact_names:
         if args.all_artifacts:
             logger.error(
                 "Can't specify --all-artifacts (or -a) and --artifact-name (or -n) together"
             )
             sys.exit(1)
 
-        if args.artifact_name not in artifact_sources["artifacts"]:
-            logger.error(f"unknown artifact: {args.artifact_name}")
+        unknown_artifact_name = False
+        for name in args.artifact_names:
+            if name not in artifact_sources["artifacts"]:
+                logger.error(f"unknown artifact: {name}")
+                unknown_artifact_name = True
 
+        if unknown_artifact_name:
             logger.info("Possible artifacts:")
             for artifact_name in artifact_sources["artifacts"]:
                 logger.info(f"  {artifact_name}")
 
             sys.exit(1)
 
-        artifact_names = [args.artifact_name]
+        artifact_names = args.artifact_names
     elif args.all_artifacts:
         artifact_names = list(artifact_sources["artifacts"].keys())
     else:
@@ -180,11 +192,13 @@ def main() -> None:
                 bearer_token_cmd, capture_output=True, stdin=subprocess.DEVNULL
             )
             if bearer_token_proc.returncode != 0:
-                logger.error("failed to get Azure access token; details follow.")
+                logger.error(
+                    "failed to get Azure access token; details follow.")
                 logger.error(bearer_token_proc.stderr.decode("utf-8"))
                 sys.exit(1)
 
-            bearer_token_stdout = bearer_token_proc.stdout.decode("utf-8").strip()
+            bearer_token_stdout = bearer_token_proc.stdout.decode(
+                "utf-8").strip()
             if not bearer_token_stdout:
                 logger.error("failed to get Azure access token")
                 sys.exit(1)
@@ -214,11 +228,13 @@ def main() -> None:
                 list_artifacts_cmd, capture_output=True, stdin=subprocess.DEVNULL
             )
             if list_artifacts_proc.returncode != 0:
-                logger.error("failed to list Azure DevOps artifacts; details follow.")
+                logger.error(
+                    "failed to list Azure DevOps artifacts; details follow.")
                 logger.error(list_artifacts_proc.stderr.decode("utf-8"))
                 sys.exit(1)
 
-            list_artifacts_stdout = list_artifacts_proc.stdout.decode("utf-8").strip()
+            list_artifacts_stdout = list_artifacts_proc.stdout.decode(
+                "utf-8").strip()
             if not list_artifacts_stdout:
                 logger.error("unable to find artifacts")
                 sys.exit(1)
@@ -234,14 +250,16 @@ def main() -> None:
                     break
 
             if not found_artifact:
-                logger.error(f"failed to find artifact {artifact_name} in pipeline")
+                logger.error(
+                    f"failed to find artifact {artifact_name} in pipeline")
                 sys.exit(1)
 
             artifact_type = found_artifact["resource"]["type"]
             artifact_is_container = artifact_type == "Container"
 
             if artifact_is_container:
-                data_prop = found_artifact["resource"]["data"].removeprefix("#/")
+                data_prop = found_artifact["resource"]["data"].removeprefix(
+                    "#/")
                 artifact_download_uri = (
                     f"{ado_org}/_apis/resources/Containers/{data_prop}"
                 )
@@ -254,13 +272,16 @@ def main() -> None:
             things_to_dl = []
 
             if "files" in artifact:
-                for f in artifact["files"]:
-                    things_to_dl.append((str(f), True))
+                for item in artifact["files"]:
+                    things_to_dl.append(parse_file_or_dir(item, True))
             if "dirs" in artifact:
-                for d in artifact["dirs"]:
-                    things_to_dl.append((str(d), False))
+                for item in artifact["dirs"]:
+                    things_to_dl.append(parse_file_or_dir(item, False))
 
-            for resource_name, is_file in things_to_dl:
+            for item in things_to_dl:
+                resource_name = item.name
+                is_file = item.is_file
+
                 resource_download_uri = artifact_download_uri
 
                 if artifact_is_container:
@@ -280,20 +301,26 @@ def main() -> None:
                     )
 
                 if is_file:
-                    resource_name_without_leading_separator = (
-                        resource_name[1:]
-                        if resource_name.startswith("/")
-                        else resource_name
-                    )
+                    if item.output_name:
+                        dest_filename = item.output_name
+                    else:
+                        resource_name_without_leading_separator = (
+                            resource_name[1:]
+                            if resource_name.startswith("/")
+                            else resource_name
+                        )
+
+                        dest_filename = resource_name_without_leading_separator
 
                     if "preserve-dirs" in artifact and artifact["preserve-dirs"]:
                         dest_path = os.path.join(
-                            output_location, resource_name_without_leading_separator
+                            output_location, dest_filename
                         )
                     else:
                         dest_path = os.path.join(
                             output_location,
-                            os.path.basename(resource_name_without_leading_separator),
+                            os.path.basename(
+                                dest_filename),
                         )
 
                     if os.path.isfile(dest_path) and args.skip_existing:
@@ -390,16 +417,19 @@ def main() -> None:
 
                                 logger.info(f"  Extracting file: {filename}")
 
-                                dest_path = os.path.join(output_location, filename)
+                                dest_path = os.path.join(
+                                    output_location, filename)
 
-                                os.makedirs(os.path.dirname(dest_path), exist_ok=True)
+                                os.makedirs(os.path.dirname(
+                                    dest_path), exist_ok=True)
 
                                 with zipped_file.open(member_info, "r") as source_file:
                                     completed = False
 
                                     try:
                                         with open(dest_path, "wb") as dest_file:
-                                            shutil.copyfileobj(source_file, dest_file)
+                                            shutil.copyfileobj(
+                                                source_file, dest_file)
                                             dest_file.flush()
                                             completed = True
                                     finally:
@@ -454,7 +484,8 @@ def select_pipeline_run(
             list_builds_cmd, capture_output=True, stdin=subprocess.DEVNULL
         )
         if list_builds_result_proc.returncode != 0:
-            logger.error("unable to find Azure DevOps pipelines; details follow.")
+            logger.error(
+                "unable to find Azure DevOps pipelines; details follow.")
             logger.error(list_builds_result_proc.stderr.decode("utf-8"))
             sys.exit(1)
 
@@ -472,7 +503,8 @@ def select_pipeline_run(
         )
 
         if "tag-patterns" in pipeline:
-            required_tag_patterns = [re.compile(p) for p in pipeline["tag-patterns"]]
+            required_tag_patterns = [re.compile(
+                p) for p in pipeline["tag-patterns"]]
         else:
             required_tag_patterns = []
 
@@ -548,7 +580,8 @@ def select_pipeline_run(
             logger.error(show_build_result_proc.stderr.decode("utf-8"))
             sys.exit(1)
 
-        build_result = json.loads(show_build_result_proc.stdout.decode("utf-8").strip())
+        build_result = json.loads(
+            show_build_result_proc.stdout.decode("utf-8").strip())
 
         actual_ado_pipeline_id = int(build_result["definition"]["id"])
         if actual_ado_pipeline_id != ado_pipeline_id:
@@ -601,3 +634,10 @@ def select_pipeline_run(
     )
 
     return int(run_id)
+
+
+def parse_file_or_dir(item: Any, is_file: bool) -> FileOrDir:
+    if isinstance(item, str):
+        return FileOrDir(name=str(item), is_file=is_file)
+
+    return FileOrDir(name=item["name"], output_name=item.get("output-name"), is_file=is_file)
