@@ -15,7 +15,7 @@ ado-download = "ado_downloader.__main__:main"
 python = "^3.7"
 colorama = "^0.4.6"
 coloredlogs = "^15.0.1"
-tqdm = "^4.65.0"
+tqdm = "^4.66.1"
 requests = "^2.31.0"
 pyyaml = "^6.0"
 
