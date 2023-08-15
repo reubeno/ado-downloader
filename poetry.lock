@@ -566,13 +566,13 @@ files = [
 
 [[package]]
 name = "types-colorama"
-version = "0.4.15.11"
+version = "0.4.15.12"
 description = "Typing stubs for colorama"
 optional = false
 python-versions = "*"
 files = [
-    {file = "types-colorama-0.4.15.11.tar.gz", hash = "sha256:a9421eb24d9cfc584880dc1d33b7fd406a14227c1f99f50c5ab9265e04d07638"},
-    {file = "types_colorama-0.4.15.11-py3-none-any.whl", hash = "sha256:d1e37571a19e152c930b3e789c316e9332e51a43bfcd4470b98225be974fb90c"},
+    {file = "types-colorama-0.4.15.12.tar.gz", hash = "sha256:fbdfc5d9d24d85c33bd054fbe33adc6cec44eedb19cfbbabfbbb57dc257ae4b8"},
+    {file = "types_colorama-0.4.15.12-py3-none-any.whl", hash = "sha256:23c9d4a00961227f7ef018d5a1c190c4bbc282119c3ee76a17677a793f13bb82"},
 ]
 
 [[package]]
@@ -667,4 +667,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.7"
-content-hash = "0f230f2178b35720591bbfbdfd92d68d8c01ff8f76186a76bbb5e292b0b0513c"
+content-hash = "5e15410113178866356a0e1190b52a8e97cdbdf1a6d879ae5c75a6ba1cb5f66f"
