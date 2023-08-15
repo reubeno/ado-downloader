@@ -29,7 +29,7 @@ types-requests = "^2.31.0.1"
 types-pyyaml = "^6.0.12"
 flake8-bugbear = "^23.3.12"
 types-tqdm = "^4.65.0.1"
-types-colorama = "^0.4.15.11"
+types-colorama = "^0.4.15.12"
 
 [build-system]
 requires = ["poetry-core"]
