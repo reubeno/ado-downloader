@@ -445,7 +445,7 @@ def select_pipeline_run(
 ) -> int:
     az_command = shutil.which("az")
     pipeline = artifact_sources["pipelines"][pipeline_name]
-    allowed_build_reasons = artifact_sources["allowedBuildReasons"]
+    allowed_build_reasons = artifact_sources.get("allowedBuildReasons")
 
     ado_org = artifact_sources["defaults"]["ado-org"]
     ado_project = artifact_sources["defaults"]["ado-project"]
@@ -513,8 +513,9 @@ def select_pipeline_run(
             patterns: Sequence[typing.Pattern[str]], br: Dict[str, Any]
         ) -> bool:
 
-            if br["reason"] not in allowed_build_reasons:
-                return False
+            if allowed_build_reasons is not None and \
+                br["reason"] not in allowed_build_reasons:
+                    return False
 
             if patterns:
                 for pattern in patterns:
