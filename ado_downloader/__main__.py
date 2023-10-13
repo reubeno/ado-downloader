@@ -514,8 +514,8 @@ def select_pipeline_run(
         ) -> bool:
 
             if allowed_build_reasons is not None and \
-                br["reason"] not in allowed_build_reasons:
-                    return False
+                    br["reason"] not in allowed_build_reasons:
+                return False
 
             if patterns:
                 for pattern in patterns:
