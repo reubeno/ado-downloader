@@ -612,13 +612,13 @@ types-urllib3 = "*"
 
 [[package]]
 name = "types-tqdm"
-version = "4.66.0.2"
+version = "4.66.0.3"
 description = "Typing stubs for tqdm"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "types-tqdm-4.66.0.2.tar.gz", hash = "sha256:9553a5e44c1d485fce19f505b8bd65c0c3e87e870678d1f2ed764ae59a55d45f"},
-    {file = "types_tqdm-4.66.0.2-py3-none-any.whl", hash = "sha256:13dddd38908834abdf0acdc2b70cab7ac4bcc5ad7356ced450471662e58a0ffc"},
+    {file = "types-tqdm-4.66.0.3.tar.gz", hash = "sha256:596a3396e7c15d3597c8af68bb3cf3ca0853dad68cea22e21b98dd8203741aff"},
+    {file = "types_tqdm-4.66.0.3-py3-none-any.whl", hash = "sha256:e47cff2e49411e9f8b7190576253de952bfe59c92261f78e8525f3199c8a01e0"},
 ]
 
 [[package]]
@@ -677,4 +677,4 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.7"
-content-hash = "c7e683063272a5cc6f80c2bdbe27ba49bb2e03195ded7bf8490c6d7ef27714ce"
+content-hash = "e6ec2d37a6d4c45dd29c430a0c32aff8144cb8d9639aa88d07268382c6b5b097"
